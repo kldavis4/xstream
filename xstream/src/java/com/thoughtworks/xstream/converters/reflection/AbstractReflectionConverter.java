@@ -48,6 +48,16 @@ public abstract class AbstractReflectionConverter implements Converter {
         serializationMembers = serializationMethodInvoker.serializationMembers;
     }
 
+    protected boolean canAccess(Class type) {
+        try {
+            reflectionProvider.getFieldOrNull(type, "%");
+            return true;
+        } catch (NoClassDefFoundError e) {
+            // restricted type in GAE
+        }
+        return false;
+    }
+
     public void marshal(Object original, final HierarchicalStreamWriter writer, final MarshallingContext context) {
         final Object source = serializationMembers.callWriteReplace(original);
 
@@ -354,7 +364,7 @@ public abstract class AbstractReflectionConverter implements Converter {
         }
     }
 
-    private Object readResolve() {
+    protected Object readResolve() {
         serializationMethodInvoker = new SerializationMethodInvoker();
         serializationMembers = serializationMethodInvoker.serializationMembers;
         return this;
