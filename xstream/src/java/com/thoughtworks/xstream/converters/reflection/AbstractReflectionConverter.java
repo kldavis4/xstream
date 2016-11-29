@@ -21,6 +21,7 @@ import com.thoughtworks.xstream.core.util.Primitives;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import com.thoughtworks.xstream.io.ExtendedHierarchicalStreamWriterHelper;
+import com.thoughtworks.xstream.core.util.SerializationMembers;
 import com.thoughtworks.xstream.mapper.Mapper;
 
 import java.lang.reflect.Field;
@@ -37,16 +38,18 @@ public abstract class AbstractReflectionConverter implements Converter {
     protected final ReflectionProvider reflectionProvider;
     protected final Mapper mapper;
     protected transient SerializationMethodInvoker serializationMethodInvoker;
+    protected transient SerializationMembers serializationMembers;
     private transient ReflectionProvider pureJavaReflectionProvider;
 
     public AbstractReflectionConverter(Mapper mapper, ReflectionProvider reflectionProvider) {
         this.mapper = mapper;
         this.reflectionProvider = reflectionProvider;
         serializationMethodInvoker = new SerializationMethodInvoker();
+        serializationMembers = serializationMethodInvoker.serializationMembers;
     }
 
     public void marshal(Object original, final HierarchicalStreamWriter writer, final MarshallingContext context) {
-        final Object source = serializationMethodInvoker.callWriteReplace(original);
+        final Object source = serializationMembers.callWriteReplace(original);
 
         if (source.getClass() != original.getClass()) {
             String attributeName = mapper.aliasForSystemAttribute("resolves-to");
@@ -160,7 +163,7 @@ public abstract class AbstractReflectionConverter implements Converter {
     public Object unmarshal(final HierarchicalStreamReader reader, final UnmarshallingContext context) {
         Object result = instantiateNewInstance(reader, context);
         result = doUnmarshal(result, reader, context);
-        return serializationMethodInvoker.callReadResolve(result);
+        return serializationMembers.callReadResolve(result);
     }
 
     public Object doUnmarshal(final Object result, final HierarchicalStreamReader reader, final UnmarshallingContext context) {
@@ -353,6 +356,7 @@ public abstract class AbstractReflectionConverter implements Converter {
 
     private Object readResolve() {
         serializationMethodInvoker = new SerializationMethodInvoker();
+        serializationMembers = serializationMethodInvoker.serializationMembers;
         return this;
     }
 
